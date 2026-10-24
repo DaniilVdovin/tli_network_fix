@@ -73,6 +73,9 @@ and the zapret profile that fixes them.
    104.18.28.95 accounts.xd.com
    104.18.25.187 furt-login-torchlight.xdgtw.com
    104.18.28.95 login-xdsdk.xd.com
+   8.219.249.169 logout-xdsdk.xd.com
+   43.109.31.242 protocol.xd.com
+   104.18.28.95 sdkpay.xd.com
    104.18.28.95 xdsdk-os-prod-gateway.xd.com
    104.18.28.95 xdsdk-os-prod-gateway2.xd.com
    104.18.25.187 version-overseas-torchlight.xdgtw.com
