@@ -23,6 +23,12 @@ call service.bat check_updates
 call service.bat load_user_lists
 echo:
 
+:: auto-pin working Cloudflare IPs in hosts (DPI blocks specific anycast
+:: IPs; the script re-probes on every start because the blocked set
+:: changes over time)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tli-hosts-fix.ps1"
+echo:
+
 set "BIN=%~dp0bin\"
 set "LISTS=%~dp0lists\"
 set "TL_RANGE=1005-65535"

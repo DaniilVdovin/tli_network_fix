@@ -36,7 +36,12 @@ and the zapret profile that fixes them.
 
 ## Contents
 
-- `general (Torchlight).bat` — zapret profile, run as administrator
+- `general (Torchlight).bat` — zapret profile, run as administrator.
+  Before starting zapret it runs `tli-hosts-fix.ps1` (see below)
+- `tli-hosts-fix.ps1` — probes the game's Cloudflare IPs and pins the
+  working ones in `C:\Windows\System32\drivers\etc\hosts` (only its own
+  marked block, other entries are never touched). Runs on every start
+  because the blocked IP set changes over time
 - `lists/ipset-torchlight.txt` — game server IPs + Cloudflare anycast IPs of
   the game's login/version domains (update when the game moves to new servers
   or the Cloudflare pair rotates). The other list files
@@ -48,11 +53,13 @@ and the zapret profile that fixes them.
 
 ## Setup
 
-1. Copy `general (Torchlight).bat` and `lists/` into your zapret
-   (zapret-discord-youtube) folder.
-2. Run `general (Torchlight).bat` as administrator.
-3. If login/version still fails, pin working IPs in `hosts` (as admin)
-   and restart the game:
+1. Copy `general (Torchlight).bat`, `tli-hosts-fix.ps1` and `lists/`
+   into your zapret (zapret-discord-youtube) folder.
+2. Run `general (Torchlight).bat` as administrator. The bat first probes
+   every Cloudflare IP of the game's domains and pins the working ones
+   in hosts (a few seconds, re-tested on every start).
+3. If the script prints `NO WORKING IP FOUND` for a domain, pin working
+   IPs manually in `hosts` (as admin) and restart the game:
 
    ```
    104.18.28.95 accounts.xd.com
