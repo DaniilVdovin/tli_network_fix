@@ -24,8 +24,12 @@ and the zapret profile that fixes them.
 
    | Domain | Purpose |
    |---|---|
-   | `accounts.xd.com` | login |
+   | `furt-login-torchlight.xdgtw.com` | login (`/platformlogin`) |
+   | `accounts.xd.com` | account / login |
+   | `login-xdsdk.xd.com`, `logout-xdsdk.xd.com` | SDK login / logout |
    | `xdsdk-os-prod-gateway.xd.com`, `xdsdk-os-prod-gateway2.xd.com` | SDK / auth gateway |
+   | `sdkpay.xd.com` | payments |
+   | `protocol.xd.com` | protocol |
    | `version-overseas-torchlight.xdgtw.com` | version check |
 
    Desync cannot fix this (it cannot change the destination IP).
@@ -67,6 +71,8 @@ and the zapret profile that fixes them.
 
    ```
    104.18.28.95 accounts.xd.com
+   104.18.25.187 furt-login-torchlight.xdgtw.com
+   104.18.28.95 login-xdsdk.xd.com
    104.18.28.95 xdsdk-os-prod-gateway.xd.com
    104.18.28.95 xdsdk-os-prod-gateway2.xd.com
    104.18.25.187 version-overseas-torchlight.xdgtw.com

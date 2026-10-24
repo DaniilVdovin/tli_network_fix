@@ -22,8 +22,17 @@
 
 $ErrorActionPreference = 'Stop'
 
+# All game API domains (from the game client log, 2026-10-24).
+# furt-login-torchlight.xdgtw.com is the actual login endpoint
+# (/platformlogin) - it was missing from the first version and
+# caused "Network request timeout" on the login screen.
 $domains = @(
     'accounts.xd.com',
+    'furt-login-torchlight.xdgtw.com',
+    'login-xdsdk.xd.com',
+    'logout-xdsdk.xd.com',
+    'protocol.xd.com',
+    'sdkpay.xd.com',
     'xdsdk-os-prod-gateway.xd.com',
     'xdsdk-os-prod-gateway2.xd.com',
     'version-overseas-torchlight.xdgtw.com'
