@@ -15,7 +15,21 @@ chcp 65001 > nul
 ::      ipset-all.txt, the standard lines do not cover them).
 ::      The IP list is extended based on monitoring results
 ::      (tli-monitor.ps1 / tli-monitor.log).
+::   3. Self-elevates to admin on start - the hosts fix writes the
+::      system hosts file, which requires admin rights.
 :: ============================================================
+
+:: Request admin rights - the hosts fix writes the system hosts file.
+:: Re-launches this bat elevated and closes this window.
+net session >nul 2>&1
+if %errorlevel% neq 0 goto :need_admin
+goto :elevated
+
+:need_admin
+powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+exit /b
+
+:elevated
 
 cd /d "%~dp0"
 
