@@ -18,15 +18,17 @@ chcp 65001 > nul
 :: ============================================================
 
 cd /d "%~dp0"
-call service.bat status_zapret
-call service.bat check_updates
-call service.bat load_user_lists
-echo:
 
 :: auto-pin working Cloudflare IPs in hosts (DPI blocks specific anycast
 :: IPs; the script re-probes on every start because the blocked set
-:: changes over time)
+:: changes over time). Must run BEFORE the service.bat calls: the
+:: update check may close this console.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tli-hosts-fix.ps1"
+echo:
+
+call service.bat status_zapret
+call service.bat check_updates
+call service.bat load_user_lists
 echo:
 
 set "BIN=%~dp0bin\"
