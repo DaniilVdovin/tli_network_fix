@@ -121,8 +121,17 @@ if (-not (Test-IsAdmin)) {
     exit 1
 }
 
+# Safety: back up the current hosts state before the first edit.
+# Created once, never overwritten - the original file is preserved.
+$backupFile = $hostsFile + '.bak-tli'
+if (-not (Test-Path $backupFile)) {
+    Copy-Item $hostsFile $backupFile -Force
+    Write-Host "Backup created: $backupFile"
+}
+
 # Rewrite only our marked block, keep everything else.
-$lines  = @(Get-Content $hostsFile)
+# UTF-8 (no BOM): non-ASCII comments in hosts survive the rewrite.
+$lines  = @(Get-Content $hostsFile -Encoding UTF8)
 $inBlock = $false
 $kept = foreach ($line in $lines) {
     $t = $line.Trim()
@@ -134,7 +143,8 @@ $newBlock = @($markerBegin) +
     @($pins | ForEach-Object { '{0}  {1}' -f $_.Ip, $_.Domain }) +
     @($markerEnd, '')
 
-Set-Content -Path $hostsFile -Value (@($kept) + $newBlock) -Encoding ascii
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[IO.File]::WriteAllLines($hostsFile, (@($kept) + $newBlock), $utf8NoBom)
 ipconfig /flushdns | Out-Null
 
 Write-Host ''
