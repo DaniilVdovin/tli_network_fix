@@ -42,6 +42,8 @@ and the zapret profile that fixes them.
   working ones in `C:\Windows\System32\drivers\etc\hosts` (only its own
   marked block, other entries are never touched). Runs on every start
   because the blocked IP set changes over time
+- `update-zapret.bat` — copies the fix files into the zapret folder,
+  if it is next to this one (`..\zapret-discord-youtube`)
 - `lists/ipset-torchlight.txt` — game server IPs + Cloudflare anycast IPs of
   the game's login/version domains (update when the game moves to new servers
   or the Cloudflare pair rotates). The other list files
@@ -53,8 +55,10 @@ and the zapret profile that fixes them.
 
 ## Setup
 
-1. Copy `general (Torchlight).bat`, `tli-hosts-fix.ps1` and `lists/`
-   into your zapret (zapret-discord-youtube) folder.
+1. Put the fix files into your zapret (zapret-discord-youtube) folder:
+   run `update-zapret.bat` if the zapret folder is next to this one,
+   otherwise copy `general (Torchlight).bat`, `tli-hosts-fix.ps1` and
+   `lists/ipset-torchlight.txt` manually.
 2. Run `general (Torchlight).bat` as administrator. The bat first probes
    every Cloudflare IP of the game's domains and pins the working ones
    in hosts (a few seconds, re-tested on every start).
