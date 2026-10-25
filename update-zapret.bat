@@ -33,8 +33,8 @@ echo.
 
 copy /y "%SRC%general (Torchlight).bat" "%ZAPRET%\" || goto :err
 copy /y "%SRC%tli-hosts-fix.ps1" "%ZAPRET%\" || goto :err
-if not exist "%ZAPRET%lists" mkdir "%ZAPRET%lists"
-copy /y "%SRC%lists\ipset-torchlight.txt" "%ZAPRET%lists\" || goto :err
+if not exist "%ZAPRET%\lists" mkdir "%ZAPRET%\lists"
+copy /y "%SRC%lists\ipset-torchlight.txt" "%ZAPRET%\lists\" || goto :err
 
 echo.
 echo Done, copied:
