@@ -33,13 +33,6 @@ exit /b
 
 cd /d "%~dp0"
 
-:: auto-pin working Cloudflare IPs in hosts (DPI blocks specific anycast
-:: IPs; the script re-probes on every start because the blocked set
-:: changes over time). Must run BEFORE the service.bat calls: the
-:: update check may close this console.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tli-hosts-fix.ps1"
-echo:
-
 call service.bat status_zapret
 call service.bat check_updates
 call service.bat load_user_lists
@@ -62,3 +55,11 @@ start "zapret: %~n0" /min "%BIN%winws.exe" --wf-tcp=80,443,2053,2083,2087,2096,8
 --filter-udp=%TL_RANGE% --ipset="%LISTS%ipset-all.txt" --ipset-exclude="%LISTS%ipset-exclude.txt" --ipset-exclude="%LISTS%ipset-exclude-user.txt" --dpi-desync=fake --dpi-desync-repeats=12 --dpi-desync-any-protocol=1 --dpi-desync-fake-unknown-udp="%BIN%ACTIVE_GAME_UDP.bin" --dpi-desync-cutoff=n2 ^
 --filter-tcp=%TL_RANGE% --ipset="%LISTS%ipset-torchlight.txt" --ipset-exclude="%LISTS%ipset-exclude.txt" --ipset-exclude="%LISTS%ipset-exclude-user.txt" --dpi-desync=multisplit --dpi-desync-any-protocol=1 --dpi-desync-cutoff=n3 --dpi-desync-split-seqovl=568 --dpi-desync-split-pos=1 --dpi-desync-split-seqovl-pattern="%BIN%tls_clienthello_4pda_to.bin" --new ^
 --filter-udp=%TL_RANGE% --ipset="%LISTS%ipset-torchlight.txt" --ipset-exclude="%LISTS%ipset-exclude.txt" --ipset-exclude="%LISTS%ipset-exclude-user.txt" --dpi-desync=fake --dpi-desync-repeats=12 --dpi-desync-any-protocol=1 --dpi-desync-fake-unknown-udp="%BIN%ACTIVE_GAME_UDP.bin" --dpi-desync-cutoff=n2
+
+:: Wait for winws to start, then auto-pin working Cloudflare IPs in hosts.
+:: Runs AFTER winws: without the desync active, ALL CF IPs are DPI-blocked
+:: (000) and the probe would false-fail. winws is the real CF fix; the
+:: hosts pin is DNS-poisoning protection on top (re-probed on every start).
+powershell -NoProfile -Command "$s=0; while (-not (Get-Process winws -ErrorAction SilentlyContinue) -and $s -lt 15) { Start-Sleep 1; $s++ }; if (Get-Process winws -ErrorAction SilentlyContinue) { 'winws started, pinning hosts...' } else { 'WARNING: winws did not start within 15s' }"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tli-hosts-fix.ps1"
+echo:
