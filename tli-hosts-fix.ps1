@@ -9,11 +9,14 @@
 # blocked one. Desync cannot change the destination IP, so the working
 # IP is pinned in hosts.
 #
-# How: for each game domain, candidate IPs = current DNS A records +
-# Cloudflare IPs from lists\ipset-torchlight.txt (fallback when DNS is
-# empty or poisoned; Cloudflare is anycast, so any working 104.18.x.x /
-# 172.64.x.x serves every domain by SNI). Every candidate is probed with
-# curl; the first one that answers is pinned.
+# How: for each game domain, candidate IPs = current DNS A records first,
+# then the exact Cloudflare IPs (/32) from lists\ipset-torchlight.txt as
+# fallback. A candidate is "working" only if the zone is actually hosted
+# on that edge (HTTP 2xx/3xx/5xx/404). 403/421 means the CF edge answers
+# but does NOT host the zone - pinning it would break the game, so it is
+# rejected. 000 means DPI-blocked / timeout. The first working candidate
+# is pinned. (Cloudflare is anycast, but only the zone-hosting edges serve
+# a given domain - a random CF IP is not a valid pin.)
 #
 # Idempotent: only the block between the marker comments below is
 # rewritten, other hosts entries are never touched.
@@ -44,13 +47,22 @@ $markerBegin = '# tli_network_fix begin'
 $markerEnd   = '# tli_network_fix end'
 $testTimeout = 5   # seconds per IP probe
 
-# Cloudflare anycast IPv4 prefixes (used to filter ipset-torchlight.txt)
+# Cloudflare anycast IPv4 prefixes (used to filter ipset-torchlight.txt).
+# Only exact IPs (/32) are valid pin candidates: a /24 range is not a
+# single pin target, and the observed game /24 (172.65.171.0/24) does not
+# host the HTTPS zone - it is the game-traffic subnet used by the winws
+# desync filter in the .bat, not by this hosts fix.
 $cfPrefix = '^(104\.(1[6-9]|2[0-3])\.|172\.(6[4-9]|7[0-9])\.)'
 $cfIps = @()
 if (Test-Path $ipsetFile) {
     $cfIps = @(Get-Content $ipsetFile |
-        ForEach-Object { ($_ -split '/')[0] } |
-        Where-Object { $_ -match $cfPrefix } |
+        ForEach-Object {
+            $entry = $_.Trim()
+            if ($entry -eq '' -or $entry -like '#*') { return }
+            $parts  = $entry -split '/'
+            $prefix = if ($parts.Count -gt 1) { $parts[1] } else { '32' }
+            if ($prefix -eq '32' -and $parts[0] -match $cfPrefix) { $parts[0] }
+        } |
         Select-Object -Unique)
 }
 
@@ -78,11 +90,12 @@ function Get-DomainIps([string]$domain) {
     return @($ips | Select-Object -Unique)
 }
 
-function Test-Ip([string]$domain, [string]$ip) {
-    # any real HTTP status (100-599) means TCP+TLS to the IP worked;
-    # 000 means blocked / timeout
-    $code = & curl.exe --ssl-no-revoke --max-time $testTimeout -s -o NUL -w '%{http_code}' --resolve "${domain}:443:${ip}" "https://${domain}/" 2>$null
-    return ($code -match '^[1-5]\d\d$')
+function Probe-Code([string]$domain, [string]$ip) {
+    # returns the HTTP status code ('000' = blocked / timeout).
+    # A usable pin: 2xx/3xx/5xx or 404 = the zone is actually hosted on
+    # this edge. 403/421 = CF edge answers but does NOT host the zone
+    # (a pin to it would break the game).
+    return (& curl.exe --ssl-no-revoke --max-time $testTimeout -s -o NUL -w '%{http_code}' --resolve "${domain}:443:${ip}" "https://${domain}/" 2>$null)
 }
 
 Write-Host ''
@@ -96,8 +109,9 @@ foreach ($domain in $domains) {
 
     $found = $null
     foreach ($ip in $candidates) {
-        if (Test-Ip $domain $ip) { $found = $ip; break }
-        Write-Host ("  {0,-40} {1,-16} blocked" -f $domain, $ip)
+        $code = Probe-Code $domain $ip
+        if ($code -match '^((2|3|5)\d\d|404)$') { $found = $ip; break }
+        Write-Host ("  {0,-40} {1,-16} {2} (not usable)" -f $domain, $ip, $code)
     }
 
     if ($found) {

@@ -56,6 +56,11 @@ and the zapret profile that fixes them.
 - `tli-monitor.ps1` — network monitor: waits for the game to start, logs all
   its TCP/UDP connections every second for 10 minutes to `tli-monitor.log`
   (next to the script)
+- `tli-scan.ps1` — read-only diagnostic scan (does NOT touch hosts):
+  resolves all game domains, probes every DNS IP per domain, sweeps
+  `172.65.171.0/24` and harvests Cloudflare IPs from popular domains,
+  prints working IPs + suggested pin list. `-SkipDns` runs only the sweeps.
+  Use it for re-diagnosis instead of the manual curl loop below
 
 ## Setup
 
@@ -70,21 +75,27 @@ and the zapret profile that fixes them.
    IPs manually in `hosts` (as admin) and restart the game:
 
    ```
-   104.18.28.95 accounts.xd.com
+   104.18.29.95 accounts.xd.com
    104.18.25.187 furt-login-torchlight.xdgtw.com
    104.18.28.95 login-xdsdk.xd.com
    8.219.249.169 logout-xdsdk.xd.com
-   43.109.31.242 protocol.xd.com
-   104.18.28.95 sdkpay.xd.com
-   104.18.28.95 xdsdk-os-prod-gateway.xd.com
+   43.109.31.239 protocol.xd.com
+   104.18.29.95 sdkpay.xd.com
+   104.18.29.95 xdsdk-os-prod-gateway.xd.com
    104.18.28.95 xdsdk-os-prod-gateway2.xd.com
    104.18.25.187 version-overseas-torchlight.xdgtw.com
    ```
 
-   IPs verified 2026-10-24. When the pins stop working, re-resolve the
-   domains and re-test the IPs (procedure below).
+   IPs verified 2026-11-18 (all 9 domains OK). When the pins stop working,
+   re-run `tli-scan.ps1` (or the manual procedure below).
 
 ## Re-diagnosis (when it breaks again)
+
+Fast path: run `tli-scan.ps1` (read-only). It resolves all game domains,
+probes every DNS IP, sweeps `172.65.171.0/24`, harvests Cloudflare IPs from
+popular domains, and prints working IPs + a suggested pin list.
+
+Manual path:
 
 1. Start the game, log its connections every second: run `tli-monitor.ps1`
    (waits for the game to start, 10 minutes, writes `tli-monitor.log`).
@@ -96,7 +107,8 @@ and the zapret profile that fixes them.
    ```
 
    - `000` / timeout → blocked IP
-   - `200` / `404` → working IP
+   - `200` / `404` / `3xx` / `5xx` → working IP (zone hosted on this edge)
+   - `403` / `421` → CF edge answers but does NOT host the zone - not a valid pin
 
 4. Update `lists/ipset-torchlight.txt` (new game IPs / Cloudflare pair) and
    the hosts pins (working Cloudflare IPs).
@@ -112,3 +124,9 @@ and the zapret profile that fixes them.
 | `47.88.128.3:80` | game services |
 | `47.241.35.211` | TapTap SDK |
 | Cloudflare `104.18.x.x` / `172.64.x.x` | login / version / CDN (`xd.com`, `xdgtw.com`) |
+
+Note: `172.65.171.0/24` is the game-traffic subnet (session channel /
+game server). It does NOT host the HTTPS login/version zone - a 2026-11-18
+sweep found 0 of its 254 IPs host the zone (all `403`/`000`). It is kept in
+`ipset-torchlight.txt` only for the winws desync filter, not for hosts pins.
+Only exact CF IPs (`/32`) that return `200`/`404` for a domain are valid pins.
